@@ -84,9 +84,4 @@ both; no need for an extra dependency for something the runtime provides.
 
 
 
-- Report the full redirect chain, not just the final URL
-- Sniff content-type from the body when the header is ambiguous
-- Flag the gap between raw-HTML word count and rendered word count for JS-heavy pages
-- Add rate limiting before leaving this public long-term
-
 
