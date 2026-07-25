@@ -1,0 +1,23 @@
+{
+  "name": "page-pulse",
+  "version": "1.0.0",
+  "description": "Page Pulse - a URL health/SEO auditing tool. Fetches a page and reports HTTP status, timing, title, meta description, heading structure, image alt-text coverage, and word count.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "jest"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  }
+}

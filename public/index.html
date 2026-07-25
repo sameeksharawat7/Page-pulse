@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Page Pulse — audit any URL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0E12;
+    --panel: #10161C;
+    --panel-border: #1D2731;
+    --pulse: #3ED598;
+    --pulse-dim: #1E5A44;
+    --warn: #F2A93B;
+    --danger: #E8586A;
+    --text: #E7EDF2;
+    --text-muted: #7C8B99;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(62, 213, 152, 0.06), transparent 45%),
+      radial-gradient(circle at 85% 10%, rgba(62, 213, 152, 0.04), transparent 40%);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 56px 24px 40px;
+  }
+
+  header.hero { text-align: left; margin-bottom: 36px; }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pulse);
+    margin-bottom: 14px;
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--pulse);
+    box-shadow: 0 0 0 0 rgba(62,213,152,0.6);
+    animation: dotpulse 1.8s ease-out infinite;
+  }
+  @keyframes dotpulse {
+    0% { box-shadow: 0 0 0 0 rgba(62,213,152,0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(62,213,152,0); }
+    100% { box-shadow: 0 0 0 0 rgba(62,213,152,0); }
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(32px, 5vw, 46px);
+    line-height: 1.05;
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    color: var(--text-muted);
+    font-size: 16px;
+    max-width: 54ch;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* --- Monitor / input panel --- */
+  .monitor {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 20px 20px 0;
+    margin-top: 32px;
+    overflow: hidden;
+  }
+
+  .monitor-scan {
+    height: 46px;
+    width: 100%;
+    overflow: hidden;
+  }
+  .monitor-scan svg { display: block; width: 200%; height: 46px; animation: scroll-line 3.2s linear infinite; }
+  .monitor-scan.flat svg { animation-play-state: paused; }
+  @keyframes scroll-line {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  form {
+    display: flex;
+    gap: 10px;
+    padding: 14px 0 18px;
+    border-top: 1px solid var(--panel-border);
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: #0C1116;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 13px 14px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  input[type="text"]::placeholder { color: #4A5866; }
+  input[type="text"]:focus { border-color: var(--pulse); }
+
+  button {
+    background: var(--pulse);
+    color: #062017;
+    border: none;
+    border-radius: 8px;
+    padding: 0 22px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  button:hover:not(:disabled) { filter: brightness(1.08); }
+  button:active:not(:disabled) { transform: scale(0.98); }
+  button:disabled { opacity: 0.55; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible, a:focus-visible {
+    outline: 2px solid var(--pulse);
+    outline-offset: 2px;
+  }
+
+  .status-line {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    min-height: 20px;
+    margin-top: -4px;
+    padding-bottom: 4px;
+  }
+  .status-line.error { color: var(--danger); }
+
+  /* --- Results --- */
+  .report { margin-top: 30px; display: none; }
+  .report.visible { display: block; }
+
+  .report-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .report-head .url {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    word-break: break-all;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 16px 16px 14px;
+  }
+  .card .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .card .value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+  .card .value.ok { color: var(--pulse); }
+  .card .value.warn { color: var(--warn); }
+  .card .value.danger { color: var(--danger); }
+  .card.wide { grid-column: 1 / -1; }
+  .card .value.text { font-size: 15px; font-weight: 500; color: var(--text); }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 18px;
+    border-top: 1px solid var(--panel-border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  footer a { color: var(--pulse); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="eyebrow"><span class="dot"></span> Live vitals for any URL</div>
+      <h1>Page Pulse</h1>
+      <p class="sub">Drop in a URL. It reads the page's vitals — status, speed, title, meta description, heading and image health, and word count — the way a monitor reads yours.</p>
+    </header>
+
+    <div class="monitor">
+      <div class="monitor-scan flat" id="scan">
+        <svg viewBox="0 0 600 46" preserveAspectRatio="none">
+          <polyline fill="none" stroke="#3ED598" stroke-width="1.5" stroke-opacity="0.55"
+            points="0,23 40,23 55,23 65,4 75,42 85,10 95,23 140,23 300,23 340,23 355,4 365,42 375,10 385,23 430,23 600,23
+                    600,23 640,23 655,23 665,4 675,42 685,10 695,23 740,23 900,23 940,23 955,4 965,42 975,10 985,23 1030,23 1200,23" />
+        </svg>
+      </div>
+      <form id="audit-form">
+        <input type="text" id="url-input" placeholder="https://example.com" autocomplete="off" inputmode="url" />
+        <button type="submit" id="submit-btn">Take pulse</button>
+      </form>
+      <div class="status-line" id="status-line"></div>
+    </div>
+
+    <section class="report" id="report" aria-live="polite">
+      <div class="report-head">
+        <strong id="report-title">Vitals report</strong>
+        <span class="url" id="report-url"></span>
+      </div>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <footer>
+      Built for Digital Heroes Training Task — <a href="https://digitalheroesco.com" target="_blank" rel="noopener">digitalheroesco.com</a>
+    </footer>
+  </div>
+
+<script>
+(function () {
+  const form = document.getElementById('audit-form');
+  const input = document.getElementById('url-input');
+  const btn = document.getElementById('submit-btn');
+  const statusLine = document.getElementById('status-line');
+  const scan = document.getElementById('scan');
+  const report = document.getElementById('report');
+  const grid = document.getElementById('grid');
+  const reportUrl = document.getElementById('report-url');
+  const reportTitle = document.getElementById('report-title');
+
+  function setLoading(loading) {
+    btn.disabled = loading;
+    input.disabled = loading;
+    btn.textContent = loading ? 'Reading…' : 'Take pulse';
+    scan.classList.toggle('flat', !loading);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function card(label, value, cls, wide) {
+    return '<div class="card' + (wide ? ' wide' : '') + '">' +
+      '<div class="label">' + label + '</div>' +
+      '<div class="value ' + (cls || '') + '">' + value + '</div>' +
+      '</div>';
+  }
+
+  function renderReport(data) {
+    reportTitle.textContent = 'Vitals report';
+    reportUrl.textContent = data.url;
+
+    const statusClass = data.httpStatus >= 200 && data.httpStatus < 300 ? 'ok'
+      : data.httpStatus >= 400 ? 'danger' : 'warn';
+
+    const altClass = data.totalImages === 0 ? '' : (data.imagesMissingAlt === 0 ? 'ok' : (data.imagesMissingAlt === data.totalImages ? 'danger' : 'warn'));
+    const h1Class = data.h1Count === 1 ? 'ok' : 'warn';
+    const descClass = data.metaDescription ? 'ok' : 'warn';
+    const titleClass = data.title ? 'ok' : 'warn';
+
+    grid.innerHTML =
+      card('HTTP status', data.httpStatus, statusClass) +
+      card('Response time', data.responseTimeMs + ' ms', data.responseTimeMs < 1000 ? 'ok' : 'warn') +
+      card('Word count', data.wordCount.toLocaleString()) +
+      card('H1 count', data.h1Count, h1Class) +
+      card('Images missing alt', data.imagesMissingAlt + ' / ' + data.totalImages, altClass) +
+      card('Meta description', data.metaDescription ? 'present' : 'missing', descClass) +
+      card('Page title', escapeHtml(data.title || '(none found)'), titleClass + ' text', true) +
+      (data.metaDescription ? card('Description text', escapeHtml(data.metaDescription), 'text', true) : '');
+
+    report.classList.add('visible');
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const url = input.value.trim();
+    if (!url) {
+      statusLine.textContent = 'Enter a URL first.';
+      statusLine.classList.add('error');
+      return;
+    }
+
+    statusLine.textContent = '';
+    statusLine.classList.remove('error');
+    setLoading(true);
+    report.classList.remove('visible');
+
+    try {
+      const res = await fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        statusLine.textContent = data.message || 'Something went wrong.';
+        statusLine.classList.add('error');
+        return;
+      }
+
+      statusLine.textContent = 'Last read ' + new Date().toLocaleTimeString();
+      renderReport(data);
+    } catch (err) {
+      statusLine.textContent = 'Network error — could not reach the audit endpoint.';
+      statusLine.classList.add('error');
+    } finally {
+      setLoading(false);
+    }
+  });
+})();
+</script>
+</body>
+</html>
