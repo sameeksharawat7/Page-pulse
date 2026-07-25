@@ -13,7 +13,7 @@ Requires Node.js 18+.
 
 ```bash
 npm install
-npm start      # http://localhost:3000
+npm start      
 npm test
 ```
 
