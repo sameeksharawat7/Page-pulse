@@ -82,7 +82,7 @@ text."
 **Native `fetch` + `AbortController` over axios.** Node 18+ already ships
 both; no need for an extra dependency for something the runtime provides.
 
-## What I'd change with more time
+
 
 - Report the full redirect chain, not just the final URL
 - Sniff content-type from the body when the header is ambiguous
